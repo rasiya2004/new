@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Crash Game Prediction</title>
+</head>
+<body>
+  <h1>Crash Game Prediction Viewer</h1>
+  <div id="prediction">Connecting...</div>
+
+  <script>
+    const socket = new WebSocket("wss://1xbet.lk/games-frame/sockets/crash?ref=1&gr=911&whence=55&fcountry=208&appGuid=games-web-app-default-web-v3&lng=en&v=1.5&access_token=eyJhbGciOiJFUzI1NiIsImtpZCI6IjEiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiI1MC8xMzY4OTcwMzk1IiwicGlkIjoiMSIsImp0aSI6IjAvOWNkNDQxY2NlNDI1MDkwM2FhOWY1NDUwNDJhZmRlOTcxNzM5NzM1Yzc3NjU5NDFkN2FjODkyNTM2OGE1ZTgxMCIsImFwcCI6Ik5BIiwiaW5uZXIiOiJ0cnVlIiwibmJmIjoxNzU5MzM0MzMwLCJleHAiOjE3NTkzNDg3MzAsImlhdCI6MTc1OTMzNDMzMH0.ABsFlScWRviXDGOzu2dlg1r_IZld6aCBVhLhafQj4m8KOAhXUPr2eOd3XMzuSOKDNKX2SVRzaMrcKki-uhFgHQ");
+
+    socket.onopen = () => {
+      document.getElementById("prediction").innerText = "Connected. Waiting for data...";
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // Adjust this based on actual data structure
+      if (data && data.nextCrashPoint) {
+        document.getElementById("prediction").innerText = "Next crash prediction: " + data.nextCrashPoint;
+      } else {
+        document.getElementById("prediction").innerText = "Received: " + event.data;
+      }
+    };
+
+    socket.onerror = (error) => {
+      document.getElementById("prediction").innerText = "Error: " + error.message;
+    };
+
+    socket.onclose = () => {
+      document.getElementById("prediction").innerText = "Connection closed.";
+    };
+  </script>
+</body>
+</html>
