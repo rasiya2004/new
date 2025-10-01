@@ -1,127 +1,361 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crash Game Live Predictor</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       text-align: center;
-      padding: 40px;
-      background: #f5f5f5;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      color: #fff;
     }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    
     h1 {
-      color: #333;
+      color: #fff;
+      margin-bottom: 25px;
+      font-size: 2.5rem;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     }
-    #history {
-      margin: 20px auto;
-      max-width: 300px;
-      text-align: left;
+    
+    .status-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
     }
-    #history span {
-      display: inline-block;
-      width: 60px;
+    
+    .prediction-card {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      border: 2px solid rgba(255, 255, 255, 0.2);
     }
+    
     #prediction {
-      font-size: 2em;
-      color: #e74c3c;
+      font-size: 2.5rem;
+      color: #ffcc00;
+      margin: 15px 0;
+      font-weight: bold;
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+      min-height: 1.2em;
+    }
+    
+    #status {
+      margin-top: 10px;
+      font-size: 1rem;
+      color: #ddd;
+    }
+    
+    .history-container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .history-title {
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      color: #ffcc00;
+    }
+    
+    #points {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    #points span {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      min-width: 70px;
+      transition: all 0.3s ease;
+    }
+    
+    #points span:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-3px);
+    }
+    
+    .stats-container {
+      display: flex;
+      justify-content: space-around;
       margin-top: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .stat-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 15px;
+      flex: 1;
+      min-width: 150px;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ffcc00;
+      margin-top: 5px;
+    }
+    
+    .disclaimer {
+      margin-top: 25px;
+      font-size: 0.8rem;
+      color: #aaa;
+      line-height: 1.4;
+    }
+    
+    .connection-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .connected {
+      background-color: #2ecc71;
+      box-shadow: 0 0 8px #2ecc71;
+    }
+    
+    .disconnected {
+      background-color: #e74c3c;
+    }
+    
+    .connecting {
+      background-color: #f39c12;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    .last-update {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Live Crash Predictor 🔮</h1>
-  <div id="history">
-    <strong>Last 10:</strong>
-    <div id="points">—</div>
+  <div class="container">
+    <h1>🎮 Crash Game Predictor 🔮</h1>
+    
+    <div class="status-card">
+      <div id="status">
+        <span class="connection-indicator connecting"></span>
+        Connecting to WebSocket...
+      </div>
+      <div class="last-update" id="lastUpdate">Last update: --</div>
+    </div>
+    
+    <div class="prediction-card">
+      <div id="prediction">Waiting for data...</div>
+    </div>
+    
+    <div class="history-container">
+      <div class="history-title">📊 Recent Crash Points</div>
+      <div id="points">–</div>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stat-box">
+        <div>Average</div>
+        <div class="stat-value" id="average">-</div>
+      </div>
+      <div class="stat-box">
+        <div>Highest</div>
+        <div class="stat-value" id="highest">-</div>
+      </div>
+      <div class="stat-box">
+        <div>Lowest</div>
+        <div class="stat-value" id="lowest">-</div>
+      </div>
+    </div>
+    
+    <div class="disclaimer">
+      <p><strong>Disclaimer:</strong> This is a demonstration tool only. Crash games use provably fair random number generators, making accurate predictions impossible. Never gamble more than you can afford to lose.</p>
+    </div>
   </div>
-  <div id="prediction">Waiting for data…</div>
 
   <script>
     // ─── CONFIG ─────────────────────────────────────────────────────────────
-    const WSS_URL = "wss://1xbet.lk/games-frame/sockets/crash?"
+    const WSS_URL = 
+      "wss://1xbet.lk/games-frame/sockets/crash?"
       + "ref=1&gr=911&whence=55&fcountry=208"
       + "&appGuid=games-web-app-default-web-v3"
-      + "&lng=en&v=1.5"
-      + "&access_token=eyJhbGciOiJFUzI1NiIsImtpZCI6IjEiLCJ0eXAiOiJKV1QifQ."
-      + "eyJzdWIiOiI1MC8xMzY4OTcwMzk1IiwicGlkIjoiMSIsImp0aSI6IjAvOWNk"
-      + "NDQxY2NlNDI1MDkwM2FhOWY1NDUwNDJhZmRlOTcxNzM5NzM1Yzc3NjU5NDFk"
-      + "N2FjODkyNTM2OGE1ZTgxMCIsImFwcCI6Ik5BIiwiaW5uZXIiOiJ0cnVlIiwib"
-      + "mJmIjoxNzU5MzM0MzMwLCJleHAiOjE3NTkzNDg3MzAsImlhdCI6MTc1OTMzND"
-      + "MzMH0.ABsFlScWRviXDGOzu2dlg1r_IZld6aCBVhLhafQj4m8KOAhXUPr2eOd"
-      + "3XMzuSOKDNKX2SVRzaMrcKki-uhFgHQ";
-    const WINDOW_SIZE = 10;
+      + "&lng=en&v=1.5";
+
+    const WINDOW_SIZE = 10;      // how many last points to keep
+    const JITTER      = 0.3;     // random jitter factor for prediction
 
     // ─── STATE ──────────────────────────────────────────────────────────────
     const crashPoints = [];
 
-    // ─── UTILS ──────────────────────────────────────────────────────────────
-    function predictNext(points) {
-      const sum = points.reduce((a, b) => a + b, 0);
-      const avg = sum / points.length;
-      // add a little random jitter
-      const jitter = (Math.random() - 0.5) * 0.4;
-      return (avg + jitter).toFixed(2);
-    }
-
+    // ─── HELPERS ────────────────────────────────────────────────────────────
     function renderHistory() {
       const container = document.getElementById("points");
-      if (crashPoints.length === 0) {
-        container.textContent = "—";
+      if (!crashPoints.length) {
+        container.textContent = "–";
         return;
       }
+      
       container.innerHTML = crashPoints
-        .map(x => `<span>${x.toFixed(2)}x</span>`)
+        .map(x => {
+          let colorClass = '';
+          if (x >= 5) colorClass = 'high';
+          else if (x >= 2) colorClass = 'medium';
+          else colorClass = 'low';
+          
+          return `<span style="background: ${getColorForValue(x)}">${x.toFixed(2)}x</span>`;
+        })
         .join("");
     }
+    
+    function getColorForValue(value) {
+      if (value >= 5) return 'rgba(46, 204, 113, 0.7)'; // Green for high values
+      if (value >= 2) return 'rgba(241, 196, 15, 0.7)'; // Yellow for medium values
+      return 'rgba(231, 76, 60, 0.7)'; // Red for low values
+    }
 
-    function renderPrediction(pred) {
-      document.getElementById("prediction").textContent =
-        `Next crash prediction: ${pred}x`;
+    function renderPrediction() {
+      const out = document.getElementById("prediction");
+      if (crashPoints.length < WINDOW_SIZE) {
+        out.textContent = `Need ${WINDOW_SIZE - crashPoints.length} more points…`;
+        return;
+      }
+      
+      const sum = crashPoints.reduce((a, b) => a + b, 0);
+      const avg = sum / crashPoints.length;
+      const jitter = (Math.random() - 0.5) * JITTER * 2;
+      const pred = (avg + jitter).toFixed(2);
+      
+      // Add emoji based on prediction
+      let emoji = "🔮";
+      if (pred > 3) emoji = "🚀";
+      else if (pred > 1.5) emoji = "📈";
+      else emoji = "📉";
+      
+      out.textContent = `${emoji} Next prediction: ${pred}x ${emoji}`;
+    }
+    
+    function updateStats() {
+      if (crashPoints.length === 0) return;
+      
+      const sum = crashPoints.reduce((a, b) => a + b, 0);
+      const avg = sum / crashPoints.length;
+      const highest = Math.max(...crashPoints);
+      const lowest = Math.min(...crashPoints);
+      
+      document.getElementById("average").textContent = avg.toFixed(2) + "x";
+      document.getElementById("highest").textContent = highest.toFixed(2) + "x";
+      document.getElementById("lowest").textContent = lowest.toFixed(2) + "x";
+    }
+
+    function setStatus(txt, isError = false) {
+      const el = document.getElementById("status");
+      const indicator = el.querySelector('.connection-indicator');
+      
+      el.textContent = txt;
+      el.appendChild(indicator);
+      
+      if (isError) {
+        indicator.className = 'connection-indicator disconnected';
+        el.style.color = "#ff6b6b";
+      } else {
+        indicator.className = 'connection-indicator connected';
+        el.style.color = "#ddd";
+      }
+    }
+    
+    function updateLastUpdateTime() {
+      const now = new Date();
+      document.getElementById("lastUpdate").textContent = 
+        `Last update: ${now.toLocaleTimeString()}`;
     }
 
     // ─── WEBSOCKET ───────────────────────────────────────────────────────────
-    const ws = new WebSocket(WSS_URL);
+    let ws;
+    function connect() {
+      ws = new WebSocket(WSS_URL);
 
-    ws.addEventListener("open", () => {
-      console.log("WebSocket connected");
-      document.getElementById("prediction").textContent =
-        "Connected. Waiting for crash points…";
-    });
+      ws.onopen = () => {
+        setStatus("WebSocket connected - Receiving live data");
+      };
 
-    ws.addEventListener("message", evt => {
-      try {
-        const data = JSON.parse(evt.data);
-        if (!data.crashPoint) return;
-
-        const cp = parseFloat(data.crashPoint);
-        crashPoints.push(cp);
-        if (crashPoints.length > WINDOW_SIZE) {
-          crashPoints.shift();
+      ws.onmessage = evt => {
+        let msg;
+        try {
+          msg = JSON.parse(evt.data);
+        } catch (e) {
+          console.error("Invalid JSON:", evt.data);
+          return;
         }
+        
+        // Try to extract crash point from different possible field names
+        let cp = null;
+        if (msg.crashPoint) cp = parseFloat(msg.crashPoint);
+        else if (msg.point) cp = parseFloat(msg.point);
+        else if (msg.value) cp = parseFloat(msg.value);
+        else if (msg.multiplier) cp = parseFloat(msg.multiplier);
+        
+        if (isNaN(cp)) {
+          console.log("Received data without crash point:", msg);
+          return;
+        }
+
+        crashPoints.push(cp);
+        if (crashPoints.length > WINDOW_SIZE) crashPoints.shift();
 
         renderHistory();
+        renderPrediction();
+        updateStats();
+        updateLastUpdateTime();
+      };
 
-        if (crashPoints.length === WINDOW_SIZE) {
-          const nextPred = predictNext(crashPoints);
-          renderPrediction(nextPred);
-        }
-      } catch (err) {
-        console.error("Parse error:", err);
-      }
-    });
+      ws.onerror = err => {
+        console.error("WebSocket error:", err);
+        setStatus("WebSocket error - Check console for details", true);
+      };
 
-    ws.addEventListener("error", err => {
-      console.error("WebSocket error:", err);
-      document.getElementById("prediction").textContent =
-        "WebSocket error. See console.";
-    });
+      ws.onclose = () => {
+        setStatus("Disconnected - Attempting to reconnect in 5 seconds", true);
+        setTimeout(connect, 5000);
+      };
+    }
 
-    ws.addEventListener("close", () => {
-      console.warn("WebSocket closed");
-      document.getElementById("prediction").textContent =
-        "Connection closed.";
-    });
+    // ─── START ───────────────────────────────────────────────────────────────
+    connect();
   </script>
 </body>
 </html>
