@@ -1,36 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Crash Game Prediction</title>
+  <meta charset="utf-8" />
+  <title>Crash Game Live Predictor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    #history {
+      margin: 20px auto;
+      max-width: 300px;
+      text-align: left;
+    }
+    #history span {
+      display: inline-block;
+      width: 60px;
+    }
+    #prediction {
+      font-size: 2em;
+      color: #e74c3c;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Crash Game Prediction Viewer</h1>
-  <div id="prediction">Connecting...</div>
+  <h1>Live Crash Predictor 🔮</h1>
+  <div id="history">
+    <strong>Last 10:</strong>
+    <div id="points">—</div>
+  </div>
+  <div id="prediction">Waiting for data…</div>
 
   <script>
-    const socket = new WebSocket("wss://1xbet.lk/games-frame/sockets/crash?ref=1&gr=911&whence=55&fcountry=208&appGuid=games-web-app-default-web-v3&lng=en&v=1.5&access_token=eyJhbGciOiJFUzI1NiIsImtpZCI6IjEiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiI1MC8xMzY4OTcwMzk1IiwicGlkIjoiMSIsImp0aSI6IjAvOWNkNDQxY2NlNDI1MDkwM2FhOWY1NDUwNDJhZmRlOTcxNzM5NzM1Yzc3NjU5NDFkN2FjODkyNTM2OGE1ZTgxMCIsImFwcCI6Ik5BIiwiaW5uZXIiOiJ0cnVlIiwibmJmIjoxNzU5MzM0MzMwLCJleHAiOjE3NTkzNDg3MzAsImlhdCI6MTc1OTMzNDMzMH0.ABsFlScWRviXDGOzu2dlg1r_IZld6aCBVhLhafQj4m8KOAhXUPr2eOd3XMzuSOKDNKX2SVRzaMrcKki-uhFgHQ");
+    // ─── CONFIG ─────────────────────────────────────────────────────────────
+    const WSS_URL = "wss://1xbet.lk/games-frame/sockets/crash?"
+      + "ref=1&gr=911&whence=55&fcountry=208"
+      + "&appGuid=games-web-app-default-web-v3"
+      + "&lng=en&v=1.5"
+      + "&access_token=eyJhbGciOiJFUzI1NiIsImtpZCI6IjEiLCJ0eXAiOiJKV1QifQ."
+      + "eyJzdWIiOiI1MC8xMzY4OTcwMzk1IiwicGlkIjoiMSIsImp0aSI6IjAvOWNk"
+      + "NDQxY2NlNDI1MDkwM2FhOWY1NDUwNDJhZmRlOTcxNzM5NzM1Yzc3NjU5NDFk"
+      + "N2FjODkyNTM2OGE1ZTgxMCIsImFwcCI6Ik5BIiwiaW5uZXIiOiJ0cnVlIiwib"
+      + "mJmIjoxNzU5MzM0MzMwLCJleHAiOjE3NTkzNDg3MzAsImlhdCI6MTc1OTMzND"
+      + "MzMH0.ABsFlScWRviXDGOzu2dlg1r_IZld6aCBVhLhafQj4m8KOAhXUPr2eOd"
+      + "3XMzuSOKDNKX2SVRzaMrcKki-uhFgHQ";
+    const WINDOW_SIZE = 10;
 
-    socket.onopen = () => {
-      document.getElementById("prediction").innerText = "Connected. Waiting for data...";
-    };
+    // ─── STATE ──────────────────────────────────────────────────────────────
+    const crashPoints = [];
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      // Adjust this based on actual data structure
-      if (data && data.nextCrashPoint) {
-        document.getElementById("prediction").innerText = "Next crash prediction: " + data.nextCrashPoint;
-      } else {
-        document.getElementById("prediction").innerText = "Received: " + event.data;
+    // ─── UTILS ──────────────────────────────────────────────────────────────
+    function predictNext(points) {
+      const sum = points.reduce((a, b) => a + b, 0);
+      const avg = sum / points.length;
+      // add a little random jitter
+      const jitter = (Math.random() - 0.5) * 0.4;
+      return (avg + jitter).toFixed(2);
+    }
+
+    function renderHistory() {
+      const container = document.getElementById("points");
+      if (crashPoints.length === 0) {
+        container.textContent = "—";
+        return;
       }
-    };
+      container.innerHTML = crashPoints
+        .map(x => `<span>${x.toFixed(2)}x</span>`)
+        .join("");
+    }
 
-    socket.onerror = (error) => {
-      document.getElementById("prediction").innerText = "Error: " + error.message;
-    };
+    function renderPrediction(pred) {
+      document.getElementById("prediction").textContent =
+        `Next crash prediction: ${pred}x`;
+    }
 
-    socket.onclose = () => {
-      document.getElementById("prediction").innerText = "Connection closed.";
-    };
+    // ─── WEBSOCKET ───────────────────────────────────────────────────────────
+    const ws = new WebSocket(WSS_URL);
+
+    ws.addEventListener("open", () => {
+      console.log("WebSocket connected");
+      document.getElementById("prediction").textContent =
+        "Connected. Waiting for crash points…";
+    });
+
+    ws.addEventListener("message", evt => {
+      try {
+        const data = JSON.parse(evt.data);
+        if (!data.crashPoint) return;
+
+        const cp = parseFloat(data.crashPoint);
+        crashPoints.push(cp);
+        if (crashPoints.length > WINDOW_SIZE) {
+          crashPoints.shift();
+        }
+
+        renderHistory();
+
+        if (crashPoints.length === WINDOW_SIZE) {
+          const nextPred = predictNext(crashPoints);
+          renderPrediction(nextPred);
+        }
+      } catch (err) {
+        console.error("Parse error:", err);
+      }
+    });
+
+    ws.addEventListener("error", err => {
+      console.error("WebSocket error:", err);
+      document.getElementById("prediction").textContent =
+        "WebSocket error. See console.";
+    });
+
+    ws.addEventListener("close", () => {
+      console.warn("WebSocket closed");
+      document.getElementById("prediction").textContent =
+        "Connection closed.";
+    });
   </script>
 </body>
 </html>
