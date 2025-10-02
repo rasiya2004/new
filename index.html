@@ -1,61 +1,378 @@
-// server.js
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const app = express();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sportodds - Premium Betting Experience</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --secondary: #6c757d;
+            --success: #198754;
+            --danger: #dc3545;
+            --dark: #212529;
+            --light: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.8rem;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .betting-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .betting-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .odds-badge {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .promo-banner {
+            background-color: var(--dark);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 40px 0;
+            margin-top: 50px;
+        }
+        
+        .sport-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">SPORTODDS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Sports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Live Betting</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Promotions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="#" class="btn btn-outline-light me-2">Login</a>
+                    <a href="#" class="btn btn-primary">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-app.use(express.json());
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <h1 class="display-4 fw-bold">BET SMARTER, WIN BIGGER</h1>
+            <p class="lead mb-4">Get up to <span class="fw-bold">$500</span> in free bets when you join today</p>
+            <a href="#" class="btn btn-light btn-lg me-2">Join Now</a>
+            <a href="#" class="btn btn-outline-light btn-lg">Learn More</a>
+        </div>
+    </section>
 
-// In a real app, this would be a database
-const users = [];
+    <!-- Features Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col">
+                    <h2>Why Choose Sportodds?</h2>
+                    <p class="text-muted">The ultimate betting experience with unmatched features</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h4>Live Betting</h4>
+                        <p class="text-muted">Place bets in real-time as the action unfolds with our live betting platform.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h4>Secure & Trusted</h4>
+                        <p class="text-muted">Your security is our priority with encrypted transactions and fair play guarantee.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h4>Mobile Optimized</h4>
+                        <p class="text-muted">Bet on the go with our fully responsive design that works on any device.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-// User Registration
-app.post('/register', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    users.push({ email, password: hashedPassword });
-    res.status(201).send('User registered successfully');
-  } catch {
-    res.status(500).send();
-  }
-});
+    <!-- Featured Events -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2>Featured Events</h2>
+                    <p class="text-muted">Don't miss these upcoming matches</p>
+                </div>
+            </div>
+            <div class="row">
+                <!-- Event 1 -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card betting-card">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>PREMIER LEAGUE • Today • 19:45</span>
+                                <span class="badge bg-warning">LIVE</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="sport-icon">
+                                        <i class="fas fa-futbol"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0">Manchester United</h5>
+                                        <small class="text-muted">vs</small>
+                                        <h5 class="mb-0">Liverpool FC</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="odds-badge text-success">2.45</div>
+                                    <small>Home Win</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="odds-badge text-primary">3.20</div>
+                                    <small>Draw</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="odds-badge text-danger">2.85</div>
+                                    <small>Away Win</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100 mt-3">Place Bet</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Event 2 -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card betting-card">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>NBA • Tomorrow • 21:30</span>
+                                <span class="badge bg-info">COMING SOON</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="sport-icon">
+                                        <i class="fas fa-basketball-ball"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0">LA Lakers</h5>
+                                        <small class="text-muted">vs</small>
+                                        <h5 class="mb-0">Boston Celtics</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="odds-badge text-success">1.95</div>
+                                    <small>Home Win</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="odds-badge text-primary">4.10</div>
+                                    <small>Draw</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="odds-badge text-danger">1.75</div>
+                                    <small>Away Win</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100 mt-3">Place Bet</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-// User Login
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = users.find(user => user.email === email);
-  if (!user) {
-    return res.status(400).send('Cannot find user');
-  }
-  try {
-    if (await bcrypt.compare(password, user.password)) {
-      const token = jwt.sign({ email: user.email }, 'your_secret_jwt_key');
-      res.json({ token });
-    } else {
-      res.status(403).send('Invalid password');
-    }
-  } catch {
-    res.status(500).send();
-  }
-});
+    <!-- Promotion Banner -->
+    <section class="py-5">
+        <div class="container">
+            <div class="promo-banner text-center">
+                <h3>WELCOME BONUS: GET 100% MATCH UP TO $500</h3>
+                <p class="mb-3">New customers only. Minimum deposit $10. Terms and conditions apply.</p>
+                <a href="#" class="btn btn-warning btn-lg">Claim Now</a>
+            </div>
+        </div>
+    </section>
 
-// Protected Route (e.g., getting user profile)
-app.get('/user/profile', authenticateToken, (req, res) => {
-  res.json({ email: req.user.email, balance: 100.00 }); // Example user data
-});
+    <!-- Sports Categories -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2>Popular Sports</h2>
+                    <p class="text-muted">Bet on your favorite sports</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="sport-icon mx-auto">
+                        <i class="fas fa-futbol"></i>
+                    </div>
+                    <div>Soccer</div>
+                </div>
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="sport-icon mx-auto">
+                        <i class="fas fa-basketball-ball"></i>
+                    </div>
+                    <div>Basketball</div>
+                </div>
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="sport-icon mx-auto">
+                        <i class="fas fa-football-ball"></i>
+                    </div>
+                    <div>Football</div>
+                </div>
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="sport-icon mx-auto">
+                        <i class="fas fa-baseball-ball"></i>
+                    </div>
+                    <div>Baseball</div>
+                </div>
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="sport-icon mx-auto">
+                        <i class="fas fa-hockey-puck"></i>
+                    </div>
+                    <div>Hockey</div>
+                </div>
+                <div class="col-md-2 col-6 mb-3 text-center">
+                    <div class="sport-icon mx-auto">
+                        <i class="fas fa-table-tennis"></i>
+                    </div>
+                    <div>Tennis</div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-// Middleware to verify JWT
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.sendStatus(401);
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5>SPORTODDS</h5>
+                    <p>The premier destination for sports betting enthusiasts. Fair, secure, and exciting.</p>
+                    <div class="d-flex">
+                        <a href="#" class="text-light me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5>Sports</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">Soccer</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Basketball</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Tennis</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Boxing</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5>Company</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">About Us</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Careers</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Contact</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Help</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Legal</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">Terms & Conditions</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Privacy Policy</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Responsible Gaming</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row pt-4 border-top">
+                <div class="col text-center">
+                    <p class="mb-0">&copy; 2025 Sportodds. All rights reserved. | 18+ Please gamble responsibly.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
 
-  jwt.verify(token, 'your_secret_jwt_key', (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-}
-
-app.listen(3000, () => console.log('Server running on port 3000'));
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
