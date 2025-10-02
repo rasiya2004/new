@@ -1,441 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vocal Remover - Remove Vocals from Any Song</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+// server.js
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const app = express();
 
-        body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            color: white;
-            min-height: 100vh;
-            padding: 20px;
-        }
+app.use(express.json());
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
+// In a real app, this would be a database
+const users = [];
 
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+// User Registration
+app.post('/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    users.push({ email, password: hashedPassword });
+    res.status(201).send('User registered successfully');
+  } catch {
+    res.status(500).send();
+  }
+});
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(to right, #fdbb2d, #b21f1f);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
+// User Login
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(user => user.email === email);
+  if (!user) {
+    return res.status(400).send('Cannot find user');
+  }
+  try {
+    if (await bcrypt.compare(password, user.password)) {
+      const token = jwt.sign({ email: user.email }, 'your_secret_jwt_key');
+      res.json({ token });
+    } else {
+      res.status(403).send('Invalid password');
+    }
+  } catch {
+    res.status(500).send();
+  }
+});
 
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.8;
-        }
+// Protected Route (e.g., getting user profile)
+app.get('/user/profile', authenticateToken, (req, res) => {
+  res.json({ email: req.user.email, balance: 100.00 }); // Example user data
+});
 
-        .upload-area {
-            border: 3px dashed #fdbb2d;
-            border-radius: 10px;
-            padding: 40px 20px;
-            text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
+// Middleware to verify JWT
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
 
-        .upload-area:hover {
-            background: rgba(253, 187, 45, 0.1);
-        }
+  jwt.verify(token, 'your_secret_jwt_key', (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
 
-        .upload-icon {
-            font-size: 60px;
-            margin-bottom: 15px;
-            color: #fdbb2d;
-        }
-
-        .upload-text {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .browse-btn {
-            background: #fdbb2d;
-            color: #1a2a6c;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 50px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .browse-btn:hover {
-            background: #ffcc44;
-            transform: scale(1.05);
-        }
-
-        .file-info {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #ccc;
-        }
-
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            gap: 15px;
-        }
-
-        .control-group {
-            flex: 1;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        select, .process-btn {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-        }
-
-        .process-btn {
-            background: linear-gradient(to right, #b21f1f, #1a2a6c);
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 25px;
-        }
-
-        .process-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .process-btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .progress-container {
-            margin-bottom: 30px;
-            display: none;
-        }
-
-        .progress-bar {
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .progress {
-            height: 100%;
-            background: linear-gradient(to right, #fdbb2d, #b21f1f);
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        .progress-text {
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .result {
-            display: none;
-            text-align: center;
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .result h3 {
-            margin-bottom: 15px;
-            color: #fdbb2d;
-        }
-
-        .audio-player {
-            width: 100%;
-            margin: 15px 0;
-        }
-
-        .download-btn {
-            background: #1a2a6c;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 50px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }
-
-        .download-btn:hover {
-            background: #2a3a9c;
-            transform: scale(1.05);
-        }
-
-        .info-section {
-            margin-top: 40px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .info-section h3 {
-            margin-bottom: 15px;
-            color: #fdbb2d;
-        }
-
-        .info-section p {
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .feature {
-            flex: 1;
-            min-width: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .feature-icon {
-            font-size: 30px;
-            margin-bottom: 10px;
-            color: #fdbb2d;
-        }
-
-        @media (max-width: 600px) {
-            .controls {
-                flex-direction: column;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Vocal Remover</h1>
-            <p class="subtitle">Remove Vocals from Any Song in Seconds</p>
-        </header>
-
-        <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">🎵</div>
-            <p class="upload-text">Drag & Drop your audio file here</p>
-            <p class="upload-text">or</p>
-            <button class="browse-btn" id="browseBtn">Browse Files</button>
-            <input type="file" id="fileInput" class="file-input" accept="audio/*">
-            <p class="file-info">Supports MP3, WAV, FLAC, and other audio formats</p>
-        </div>
-
-        <div class="controls">
-            <div class="control-group">
-                <label for="quality">Output Quality</label>
-                <select id="quality">
-                    <option value="high">High (320 kbps)</option>
-                    <option value="medium" selected>Medium (192 kbps)</option>
-                    <option value="low">Low (128 kbps)</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="format">Output Format</label>
-                <select id="format">
-                    <option value="mp3" selected>MP3</option>
-                    <option value="wav">WAV</option>
-                    <option value="flac">FLAC</option>
-                </select>
-            </div>
-        </div>
-
-        <button class="process-btn" id="processBtn" disabled>Remove Vocals</button>
-
-        <div class="progress-container" id="progressContainer">
-            <div class="progress-bar">
-                <div class="progress" id="progress"></div>
-            </div>
-            <p class="progress-text" id="progressText">Processing... 0%</p>
-        </div>
-
-        <div class="result" id="result">
-            <h3>Your Vocal-Free Track is Ready!</h3>
-            <audio controls class="audio-player" id="audioPlayer"></audio>
-            <br>
-            <button class="download-btn" id="downloadBtn">Download Instrumental</button>
-        </div>
-
-        <div class="info-section">
-            <h3>How It Works</h3>
-            <p>Our advanced AI algorithm analyzes your audio file and separates the vocals from the instrumental track using sophisticated machine learning techniques.</p>
-            
-            <div class="features">
-                <div class="feature">
-                    <div class="feature-icon">⚡</div>
-                    <h4>Fast Processing</h4>
-                    <p>Get results in seconds with our optimized processing engine</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🎛️</div>
-                    <h4>High Quality</h4>
-                    <p>Preserve audio quality while effectively removing vocals</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🔒</div>
-                    <h4>Privacy First</h4>
-                    <p>Your files are processed locally and never stored on our servers</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
-            const browseBtn = document.getElementById('browseBtn');
-            const processBtn = document.getElementById('processBtn');
-            const progressContainer = document.getElementById('progressContainer');
-            const progress = document.getElementById('progress');
-            const progressText = document.getElementById('progressText');
-            const result = document.getElementById('result');
-            const audioPlayer = document.getElementById('audioPlayer');
-            const downloadBtn = document.getElementById('downloadBtn');
-            
-            let selectedFile = null;
-            
-            // Event listeners for file upload
-            browseBtn.addEventListener('click', () => fileInput.click());
-            
-            fileInput.addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    handleFileSelection(e.target.files[0]);
-                }
-            });
-            
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadArea.style.background = 'rgba(253, 187, 45, 0.2)';
-            });
-            
-            uploadArea.addEventListener('dragleave', function() {
-                uploadArea.style.background = '';
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadArea.style.background = '';
-                if (e.dataTransfer.files.length > 0) {
-                    handleFileSelection(e.dataTransfer.files[0]);
-                }
-            });
-            
-            // Process button click
-            processBtn.addEventListener('click', processAudio);
-            
-            // Download button click
-            downloadBtn.addEventListener('click', function() {
-                if (selectedFile) {
-                    const a = document.createElement('a');
-                    a.href = audioPlayer.src;
-                    a.download = `instrumental_${selectedFile.name}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
-            });
-            
-            function handleFileSelection(file) {
-                // Check if file is an audio file
-                if (!file.type.startsWith('audio/')) {
-                    alert('Please select an audio file');
-                    return;
-                }
-                
-                selectedFile = file;
-                uploadArea.innerHTML = `
-                    <div class="upload-icon">✅</div>
-                    <p class="upload-text">File Selected</p>
-                    <p class="file-info">${file.name}</p>
-                    <p class="file-info">Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                `;
-                processBtn.disabled = false;
-            }
-            
-            function processAudio() {
-                if (!selectedFile) return;
-                
-                // Show progress container
-                progressContainer.style.display = 'block';
-                processBtn.disabled = true;
-                
-                // Simulate processing with progress updates
-                let progressValue = 0;
-                const interval = setInterval(() => {
-                    progressValue += Math.random() * 10;
-                    if (progressValue >= 100) {
-                        progressValue = 100;
-                        clearInterval(interval);
-                        
-                        // Show result after processing
-                        setTimeout(() => {
-                            progressContainer.style.display = 'none';
-                            result.style.display = 'block';
-                            
-                            // For demo purposes, we'll use the original file
-                            // In a real application, this would be the processed file
-                            const audioURL = URL.createObjectURL(selectedFile);
-                            audioPlayer.src = audioURL;
-                        }, 500);
-                    }
-                    
-                    progress.style.width = `${progressValue}%`;
-                    progressText.textContent = `Processing... ${Math.round(progressValue)}%`;
-                }, 200);
-            }
-        });
-    </script>
-</body>
-</html>
+app.listen(3000, () => console.log('Server running on port 3000'));
