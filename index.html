@@ -1,161 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Odd Value Monitor</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px; 
-            line-height: 1.6;
-        }
-        #status { 
-            margin-bottom: 10px; 
-            font-weight: bold;
-        }
-        .connected { 
-            color: green; 
-        }
-        .disconnected { 
-            color: red; 
-        }
-        #results {
-            margin-top: 20px;
-        }
-        .event {
-            padding: 8px;
-            margin-bottom: 5px;
-            background-color: #f4f4f4;
-            border-left: 4px solid #007cba;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Live Odd Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { color: #2c3e50; }
+    .stats { margin-top: 20px; }
+    .stats div { margin-bottom: 10px; }
+  </style>
 </head>
 <body>
-    <h1>Odd Value Monitor (Target: 8)</h1>
-    <div id="status" class="disconnected">Status: Disconnected</div>
-    
-    <div id="counters">
-        <p>Total Values Received: <span id="totalCount">0</span></p>
-        <p>Times Odd Value was 8: <span id="targetCount">0</span></p>
-        <p>Percentage (Odd=8): <span id="percentage">0</span>%</p>
-    </div>
+  <h1>Live Odd Value Tracker</h1>
+  <div class="stats">
+    <div>Total Odd Values Received: <span id="total">0</span></div>
+    <div>Odd > 8 Count: <span id="above8">0</span></div>
+    <div>Percentage Above 8: <span id="percentage">0%</span></div>
+    <div>Latest Odd Value: <span id="latest">-</span></div>
+  </div>
 
-    <div id="results"></div>
+  <script>
+    const ws = new WebSocket("wss://1xbet.lk/games-frame/sockets/crash?ref=1&gr=911&whence=55&fcountry=208&appGuid=games-web-app-default-web-v3&lng=en&v=1.5");
 
-    <script>
-        // WebSocket connection details
-        const wsUrl = 'wss://1xbet.lk/games-frame/sockets/crash?ref=1&gr=911&whence=55&fcountry=208&appGuid=games-web-app-default-web-v3&lng=en&v=1.5';
-        let socket;
-        
-        // Counters for statistics
-        let totalValuesReceived = 0;
-        let timesOddWasEight = 0;
+    let totalCount = 0;
+    let above8Count = 0;
 
-        // DOM elements
-        const statusElement = document.getElementById('status');
-        const totalCountElement = document.getElementById('totalCount');
-        const targetCountElement = document.getElementById('targetCount');
-        const percentageElement = document.getElementById('percentage');
-        const resultsElement = document.getElementById('results');
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const odd = parseFloat(data?.odd);
 
-        // Function to connect to the WebSocket
-        function connect() {
-            socket = new WebSocket(wsUrl);
+        if (!isNaN(odd)) {
+          totalCount++;
+          if (odd > 8) above8Count++;
 
-            socket.onopen = function(event) {
-                statusElement.textContent = 'Status: Connected';
-                statusElement.className = 'connected';
-                logEvent('WebSocket connection established.');
-            };
+          const percentage = ((above8Count / totalCount) * 100).toFixed(2);
 
-            socket.onmessage = function(event) {
-                totalValuesReceived++;
-                totalCountElement.textContent = totalValuesReceived;
-                
-                try {
-                    // Try to parse the incoming data
-                    const data = parseWebSocketData(event.data);
-                    
-                    if (data && typeof data.value !== 'undefined') {
-                        const value = data.value;
-                        
-                        // Check if the value is odd and equals 8
-                        if (isOdd(value) && value === 8) {
-                            timesOddWasEight++;
-                            targetCountElement.textContent = timesOddWasEight;
-                            
-                            // Calculate and update percentage
-                            const percentage = ((timesOddWasEight / totalValuesReceived) * 100).toFixed(2);
-                            percentageElement.textContent = percentage;
-                            
-                            // Log this specific event
-                            logEvent(`Target Hit! Odd value is 8. Running percentage: ${percentage}%`, true);
-                        }
-                    } else {
-                        logEvent(`Received data: ${event.data}`);
-                    }
-                } catch (error) {
-                    logEvent(`Error processing message: ${error}. Raw data: ${event.data}`);
-                }
-            };
-
-            socket.onclose = function(event) {
-                statusElement.textContent = 'Status: Disconnected';
-                statusElement.className = 'disconnected';
-                logEvent(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
-                
-                // Attempt to reconnect after 5 seconds
-                setTimeout(connect, 5000);
-            };
-
-            socket.onerror = function(error) {
-                logEvent('WebSocket error occurred.');
-                console.error('WebSocket Error:', error);
-            };
+          document.getElementById("total").textContent = totalCount;
+          document.getElementById("above8").textContent = above8Count;
+          document.getElementById("percentage").textContent = `${percentage}%`;
+          document.getElementById("latest").textContent = odd;
         }
+      } catch (e) {
+        console.warn("Invalid message format:", event.data);
+      }
+    };
 
-        // Function to parse WebSocket data
-        function parseWebSocketData(rawData) {
-            // Check if the data is a number
-            const numberValue = Number(rawData);
-            if (!isNaN(numberValue)) {
-                return { value: numberValue };
-            }
-            
-            // Check if the data is a JSON string
-            try {
-                const jsonData = JSON.parse(rawData);
-                return jsonData;
-            } catch (e) {
-                // If parsing fails, return the raw data for debugging
-                return { raw: rawData };
-            }
-        }
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
 
-        // Function to check if a number is odd [citation:7]
-        function isOdd(number) {
-            return Math.abs(number % 2) === 1;
-        }
-
-        // Function to log events to the results div
-        function logEvent(message, isHighlighted = false) {
-            const eventDiv = document.createElement('div');
-            eventDiv.className = 'event';
-            eventDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            
-            if (isHighlighted) {
-                eventDiv.style.backgroundColor = '#e0f7fa';
-                eventDiv.style.borderLeftColor = '#ff9800';
-            }
-            
-            resultsElement.appendChild(eventDiv);
-            // Auto-scroll to the latest event
-            resultsElement.scrollTop = resultsElement.scrollHeight;
-        }
-
-        // Initialize the connection when the page loads
-        window.onload = connect;
-    </script>
+    ws.onclose = () => {
+      console.log("WebSocket connection closed.");
+    };
+  </script>
 </body>
 </html>
