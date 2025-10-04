@@ -1,58 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Live Odd Tracker</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { color: #2c3e50; }
-    .stats { margin-top: 20px; }
-    .stats div { margin-bottom: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>1xBet Crash Odd Live Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; background: #1b222c; color: #fff; }
+        h1 { color: #5ee05e; }
+        .stat-box { margin-top: 30px; background: #232c3b; padding: 20px; border-radius: 6px; }
+        .live-odd { font-size: 2.5em; color: #f5db4a; }
+        .summary { margin-top: 20px; font-size: 1.2em; }
+        .highlights { color: #23eacb; font-weight: bold; }
+    </style>
 </head>
 <body>
-  <h1>Live Odd Value Tracker</h1>
-  <div class="stats">
-    <div>Total Odd Values Received: <span id="total">0</span></div>
-    <div>Odd > 8 Count: <span id="above8">0</span></div>
-    <div>Percentage Above 8: <span id="percentage">0%</span></div>
-    <div>Latest Odd Value: <span id="latest">-</span></div>
-  </div>
+    <h1>Crash Odd Live Viewer</h1>
+    <div class="stat-box">
+        <div>Live Odd Value: <span class="live-odd" id="liveOdd">--</span></div>
+        <div class="summary">
+            <div>Games Observed: <span id="totalGames">0</span></div>
+            <div>Odds &gt; 8: <span class="highlights" id="highOdds">0</span></div>
+            <div>Percentage Odds &gt; 8: <span class="highlights" id="highPercent">0</span>%</div>
+        </div>
+    </div>
+    <script>
+        // Change this if you want to use another language or set of params
+        const wsUrl = "wss://1xbet.lk/games-frame/sockets/crash?ref=1&gr=911&whence=55&fcountry=208&appGuid=games-web-app-default-web-v3&lng=en&v=1.5";
+        const liveOddElem = document.getElementById('liveOdd');
+        const totalGamesElem = document.getElementById('totalGames');
+        const highOddsElem = document.getElementById('highOdds');
+        const highPercentElem = document.getElementById('highPercent');
 
-  <script>
-    const ws = new WebSocket("wss://1xbet.lk/games-frame/sockets/crash?ref=1&gr=911&whence=55&fcountry=208&appGuid=games-web-app-default-web-v3&lng=en&v=1.5");
+        let totalGames = 0;
+        let highOddsCount = 0;
+        let lastOdd = null;
 
-    let totalCount = 0;
-    let above8Count = 0;
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const odd = parseFloat(data?.odd);
-
-        if (!isNaN(odd)) {
-          totalCount++;
-          if (odd > 8) above8Count++;
-
-          const percentage = ((above8Count / totalCount) * 100).toFixed(2);
-
-          document.getElementById("total").textContent = totalCount;
-          document.getElementById("above8").textContent = above8Count;
-          document.getElementById("percentage").textContent = `${percentage}%`;
-          document.getElementById("latest").textContent = odd;
+        function percent(value, total) {
+            return total === 0 ? '0' : ((value / total) * 100).toFixed(2);
         }
-      } catch (e) {
-        console.warn("Invalid message format:", event.data);
-      }
-    };
 
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+        function updateUI() {
+            totalGamesElem.textContent = totalGames;
+            highOddsElem.textContent = highOddsCount;
+            highPercentElem.textContent = percent(highOddsCount, totalGames);
+        }
 
-    ws.onclose = () => {
-      console.log("WebSocket connection closed.");
-    };
-  </script>
+        function processOdd(odd) {
+            liveOddElem.textContent = odd;
+            totalGames++;
+            if (odd > 8) highOddsCount++;
+            updateUI();
+        }
+
+        // 1xBet crash sends lots of pings and JSONs; we only care about odds from round results
+        function extractOddFromMessage(data) {
+            try {
+                const msg = JSON.parse(data);
+                // For 1xBet crash, after each round ends, there is an odd value in a result message.
+                // The "crash" odd usually comes as { t: "cr", v: { ... crash info ... } }
+                if (msg && msg.t === "cr" && msg.v && typeof msg.v.o === "number") {
+                    return msg.v.o; // This is the odd (multiplier)
+                }
+                // Some variants may use { t: "cr", v: { o: odd } }
+            } catch (e) { /* ignore */ }
+            return null;
+        }
+
+        function startWebSocket() {
+            let ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                liveOddElem.textContent = "Connected...";
+            };
+
+            ws.onclose = function() {
+                liveOddElem.textContent = "Disconnected. Reconnecting...";
+                setTimeout(startWebSocket, 3000);
+            };
+
+            ws.onerror = function() {
+                liveOddElem.textContent = "Error. Reconnecting...";
+                ws.close();
+            };
+
+            ws.onmessage = function(event) {
+                const odd = extractOddFromMessage(event.data);
+                if (odd !== null && odd !== lastOdd) {
+                    lastOdd = odd;
+                    processOdd(odd);
+                }
+            };
+        }
+
+        // Start the process
+        startWebSocket();
+    </script>
 </body>
 </html>
