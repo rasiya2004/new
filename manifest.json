@@ -1,0 +1,16 @@
+  "manifest_version": 3,
+  "name": "THUNDERFREE FREE VERSION 8.6 THIMBLE",
+  "version": "1.0",
+  "description": "Find OUT the BALL @Thunder28king",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Start Shuffle"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*thimbles?thun28*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ]
+}
