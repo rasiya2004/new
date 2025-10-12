@@ -1,0 +1,63 @@
+/* General Body Styling */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+}
+
+/* Game Overlay Container */
+#overlay-container {
+    position: fixed;
+    top: 35%; /* Centered vertically */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px; /* Width for positioning cups */
+    height: 200px; /* Container height */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none; /* Allows page clicks below */
+    z-index: 9999; /* Always on top */
+}
+
+/* Ball Styling (Image) */
+#ball {
+    width: 40px; /* Fixed width */
+    height: 40px; /* Fixed height */
+    background-image: url('https://i.imgur.com/MEWl5rR.png'); /* Ball image URL */
+    background-size: contain; /* Ensures the image fits perfectly */
+    background-repeat: no-repeat; /* Prevent tiling */
+    background-position: center; /* Center the image */
+    position: absolute;
+    top: 132px; /* Increased from 70px to 182px (7 inches down) */
+    transition: transform 0.5s ease; /* Smooth shuffle transition */
+    pointer-events: auto;
+}
+
+/* Highlight Effect for the Ball Image */
+#ball.highlight {
+    border: 5px solid yellow; /* Add a yellow border to highlight the ball */
+    box-shadow: 0 0 15px yellow; /* Add a glowing yellow effect */
+    transition: border 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions */
+}
+
+
+/* Shuffle Button Styling */
+#shuffleButton {
+    position: absolute;
+    top: 330px; /* Position of the button */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #000000	; /* Purple button */
+    color: WHITE;
+    font-size: 18px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+#shuffleButton:hover {
+    background-color: #006400	; /* Darker purple on hover */
+}
